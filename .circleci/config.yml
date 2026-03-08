@@ -40,6 +40,7 @@ jobs:
           command: |
             PR_NUMBER=$CIRCLE_PR_NUMBER
 
+            echo "PR number is: $PR_NUMBER"
             echo $PR_NUMBER > /tmp/pr_number
 
             curl -s -X POST \
@@ -48,14 +49,16 @@ jobs:
               "https://api.github.com/repos/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/issues/$PR_NUMBER/labels" \
               -d '{"labels":["New Panorama"]}'
 
-            COMMENT_ID=$(curl -s -X POST \
+            printf '{"body":"Panorama submission detected. Running a build to check if everything compiles correctly. Please wait."}' > /tmp/comment_body.json
+
+            COMMENT_RESPONSE=$(curl -s -X POST \
               -H "Authorization: token $GH_TOKEN" \
               -H "Content-Type: application/json" \
               "https://api.github.com/repos/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/issues/$PR_NUMBER/comments" \
-              -d '{"body":"Panorama submission detected. Running a build to check if everything compiles correctly. Please wait."}' \
-              | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
+              -d @/tmp/comment_body.json)
 
-            echo $COMMENT_ID > /tmp/comment_id
+            echo "$COMMENT_RESPONSE"
+            echo "$COMMENT_RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])" > /tmp/comment_id
 
       - run:
           name: Build
@@ -65,13 +68,14 @@ jobs:
           name: Update comment and assign on success
           command: |
             PR_NUMBER=$(cat /tmp/pr_number)
-            COMMENT_ID=$(cat /tmp/comment_id)
+
+            printf '{"body":"Build passed. The submission looks good and is ready to be reviewed. The owner will take a look when available."}' > /tmp/success_body.json
 
             curl -s -X PATCH \
               -H "Authorization: token $GH_TOKEN" \
               -H "Content-Type: application/json" \
-              "https://api.github.com/repos/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/issues/comments/$COMMENT_ID" \
-              -d '{"body":"Build passed. The submission looks good and is ready to be reviewed. The owner will take a look when available."}' \
+              "https://api.github.com/repos/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/issues/comments/$(cat /tmp/comment_id)" \
+              -d @/tmp/success_body.json \
 
             curl -s -X POST \
               -H "Authorization: token $GH_TOKEN" \
