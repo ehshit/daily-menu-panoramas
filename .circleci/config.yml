@@ -45,16 +45,17 @@ jobs:
               -H "Content-Type: application/json" \
               "https://api.github.com/repos/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/issues/$PR_NUMBER/labels" \
               -d '{"labels":["New Panorama"]}' > /dev/null
-            python3 << PYEOF
-import json, os
-url = os.environ.get('CIRCLE_BUILD_URL', '')
-body = (
-    "Panorama submission detected. Running a build to check if everything compiles correctly. Please wait.\n\n"
-    f"###### *This is an automated check run by [CircleCI]({url}).*"
-)
-with open('/tmp/comment_body.json', 'w') as f:
-    json.dump({"body": body}, f)
-PYEOF
+            cat \<< 'PYEOF' > /tmp/comment_body.py
+            import json, os
+            url = os.environ.get("CIRCLE_BUILD_URL", "")
+            body = (
+                "Panorama submission detected. Running a build to check if everything compiles correctly. Please wait.\n\n"
+                f"###### *This is an automated check run by [CircleCI]({url}).*"
+            )
+            with open("/tmp/comment_body.json", "w") as f:
+                json.dump({"body": body}, f)
+            PYEOF
+            python3 /tmp/comment_body.py
             curl -s -X POST \
               -H "Authorization: token $GH_TOKEN" \
               -H "Content-Type: application/json" \
@@ -75,16 +76,17 @@ PYEOF
               -H "Content-Type: application/json" \
               "https://api.github.com/repos/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/issues/$PR_NUMBER/labels" \
               -d '{"labels":["Panorama Submission Passes"]}' > /dev/null
-            python3 << PYEOF
-import json, os
-url = os.environ.get('CIRCLE_BUILD_URL', '')
-body = (
-    "Build passed. The submission looks good and is ready to be reviewed. The owner will take a look when available.\n\n"
-    f"###### *This is an automated check run by [CircleCI]({url}).*"
-)
-with open('/tmp/success_body.json', 'w') as f:
-    json.dump({"body": body}, f)
-PYEOF
+            cat \<< 'PYEOF' > /tmp/success_body.py
+            import json, os
+            url = os.environ.get("CIRCLE_BUILD_URL", "")
+            body = (
+                "Build passed. The submission looks good and is ready to be reviewed. The owner will take a look when available.\n\n"
+                f"###### *This is an automated check run by [CircleCI]({url}).*"
+            )
+            with open("/tmp/success_body.json", "w") as f:
+                json.dump({"body": body}, f)
+            PYEOF
+            python3 /tmp/success_body.py
             curl -s -X POST \
               -H "Authorization: token $GH_TOKEN" \
               -H "Content-Type: application/json" \
@@ -104,18 +106,19 @@ PYEOF
               -H "Content-Type: application/json" \
               "https://api.github.com/repos/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/issues/$PR_NUMBER/labels" \
               -d '{"labels":["Check failed"]}' > /dev/null
-            python3 << PYEOF
-import json, os
-url = os.environ.get('CIRCLE_BUILD_URL', '')
-log = open('/tmp/build_output.txt').read() if os.path.exists('/tmp/build_output.txt') else 'Build output not available.'
-body = (
-    "Build failed. The submission could not be compiled. Check your changes and push a fix.\n\n"
-    "<details>\n<summary>Build output</summary>\n\n```\n" + log + "\n```\n</details>\n\n"
-    f"###### *This is an automated check run by [CircleCI]({url}). You can view the full build output there.*"
-)
-with open('/tmp/fail_body.json', 'w') as f:
-    json.dump({"body": body}, f)
-PYEOF
+            cat \<< 'PYEOF' > /tmp/fail_body.py
+            import json, os
+            url = os.environ.get("CIRCLE_BUILD_URL", "")
+            log = open("/tmp/build_output.txt").read() if os.path.exists("/tmp/build_output.txt") else "Build output not available."
+            body = (
+                "Build failed. The submission could not be compiled. Check your changes and push a fix.\n\n"
+                "<details>\n<summary>Build output</summary>\n\n```\n" + log + "\n```\n</details>\n\n"
+                f"###### *This is an automated check run by [CircleCI]({url}). You can view the full build output there.*"
+            )
+            with open("/tmp/fail_body.json", "w") as f:
+                json.dump({"body": body}, f)
+            PYEOF
+            python3 /tmp/fail_body.py
             curl -s -X POST \
               -H "Authorization: token $GH_TOKEN" \
               -H "Content-Type: application/json" \
